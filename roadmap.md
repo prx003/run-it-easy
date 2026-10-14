@@ -3,6 +3,6 @@
 - [x] Restore accounts, content, storage, and access rules in Cloud.
 - [x] Add original media-first Post, Reel, and Story creation.
 - [x] Verify authenticated photo/story upload/share/readback.
-- [ ] Polish profile creation and add story text, stickers, positioning, and undo/redo.
-- [ ] Verify upgraded creation and story sharing on desktop and mobile.
+- [ ] Upgrade the profile Create menu and Post, Reel, Story, Ticket, Tweet, Event, and News forms.
+- [ ] Verify all creation forms and authenticated sharing on phone and desktop.
 - [ ] Existing records, users, and uploaded files: blocked by missing exports.

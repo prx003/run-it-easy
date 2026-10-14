@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { X } from 'lucide-react';
+import { X, Send, LoaderCircle, ImagePlus, Plus, BarChart3 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
+import { ContentPreview } from './ContentPreview';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,19 +18,19 @@ const DOMAINS = ['Sports', 'Arts', 'Culture', 'Gaming', 'Music', 'Festival'];
 const NEWS_CATS = ['Announcement', 'Results', 'Interview', 'Feature', 'Opinion', 'Breaking'];
 
 function Field({ label, hint, children, wide }: { label: string; hint?: string; children: ReactNode; wide?: boolean }) {
-  return <label className={`block text-sm ${wide ? 'sm:col-span-2' : ''}`}>
+  return <label className={`studio-field block text-sm ${wide ? 'sm:col-span-2' : ''}`}>
     <span className="font-medium">{label}</span>{children}
     {hint && <span className="mt-1 block text-xs text-ink-muted">{hint}</span>}
   </label>;
 }
 function Section({ title, children }: { title: string; children: ReactNode }) {
-  return <fieldset className="rounded-lg border border-ink-border p-3">
-    <legend className="px-1 text-xs font-bold uppercase tracking-widest text-ink-muted">{title}</legend>
+  return <fieldset className="studio-form-section">
+    <legend className="studio-section-heading">{title}</legend>
     <div className="grid gap-3 sm:grid-cols-2">{children}</div>
   </fieldset>;
 }
 function Toggle({ name, label, defaultChecked = true }: { name: string; label: string; defaultChecked?: boolean }) {
-  return <label className="flex items-center gap-2 text-sm"><input type="checkbox" name={name} defaultChecked={defaultChecked} className="h-4 w-4 accent-primary" />{label}</label>;
+  return <label className="social-toggle-row">{label}<Switch name={name} defaultChecked={defaultChecked} /></label>;
 }
 
 const mediaRule: Partial<Record<CreateKind, { accept: string; multiple: boolean; required: boolean; max: number; label: string }>> = {
@@ -40,7 +43,8 @@ const mediaRule: Partial<Record<CreateKind, { accept: string; multiple: boolean;
 const MAX_MB = 50;
 
 export function Composer({ kind, onClose }: { kind: CreateKind; onClose: () => void }) {
-  const { user, accountType } = useAccount(); const queries = useQueryClient(); const content = useCommunityContent();
+  const { user, accountType, profile } = useAccount(); const queries = useQueryClient(); const content = useCommunityContent();
+  const [values, setValues] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<File[]>([]); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
   const [text, setText] = useState(''); const [paid, setPaid] = useState(false); const [poll, setPoll] = useState<string[]>([]);
   const rule = mediaRule[kind];
@@ -88,7 +92,7 @@ export function Composer({ kind, onClose }: { kind: CreateKind; onClose: () => v
         price: kind === 'Event' && !paid ? 0 : Number(f.get('price') ?? 0), event_id: kind === 'Ticket' ? s('event') : null, details,
       });
       if (error) throw error;
-      await queries.invalidateQueries({ queryKey: ['community-content'] }); onClose();
+      await queries.invalidateQueries({ queryKey: ['community-content'] }); toast.success(`${kind} published`); onClose();
     } catch (err) {
       if (paths.length) await supabase.storage.from('community-media').remove(paths);
       setError(err instanceof Error ? err.message : 'Could not publish. Please try again.');
@@ -98,15 +102,16 @@ export function Composer({ kind, onClose }: { kind: CreateKind; onClose: () => v
   const captionLabel = { Post: 'Caption', Reel: 'Caption', Story: 'Text on story', Tweet: "What's happening?", News: 'Full story', Event: 'Description', Ticket: 'Ticket description' }[kind];
   const textRequired = kind === 'Tweet' || kind === 'News' || kind === 'Event';
 
-  return <form onSubmit={submit} className={`space-y-4 ${kind === 'Post' ? 'post-composer' : ''}`}>
+  return <form onSubmit={submit} onChange={e => { const data = new FormData(e.currentTarget); setValues(Object.fromEntries(Array.from(data.entries()).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))); }} className="domain-composer">
+    <div className="domain-form-column">
     {rule && <Section title="Media">
       <Field label={rule.label} hint={`Max ${MAX_MB} MB per file`} wide>
-        <Input type="file" aria-label={rule.label} accept={rule.accept} multiple={rule.multiple} className="mt-1" onChange={e => { pickFiles(Array.from(e.target.files ?? [])); e.target.value = ''; }} />
+        <span className="domain-media-picker"><ImagePlus className="size-6 text-primary"/><Input type="file" aria-label={rule.label} accept={rule.accept} multiple={rule.multiple} className="mt-1" onChange={e => { pickFiles(Array.from(e.target.files ?? [])); e.target.value = ''; }} /></span>
       </Field>
       {!!previews.length && <div className="flex gap-2 overflow-x-auto sm:col-span-2">{previews.map((p, i) =>
         <div key={p.url} className="relative h-24 w-24 shrink-0 overflow-hidden rounded-md bg-ink">
           {p.video ? <video src={p.url} className="h-full w-full object-cover" muted /> : <img src={p.url} alt="" className="h-full w-full object-cover" />}
-          <button type="button" aria-label="Remove" onClick={() => setFiles(files.filter((_, j) => j !== i))} className="absolute right-1 top-1 rounded-full bg-background/80 p-0.5"><X className="h-3 w-3" /></button>
+          <Button type="button" size="icon" variant="secondary" aria-label={`Remove image ${i + 1}`} onClick={() => setFiles(files.filter((_, j) => j !== i))} className="absolute right-1 top-1 size-6"><X className="h-3 w-3" /></Button>
         </div>)}</div>}
       {kind === 'Post' && <Field label="Alt text" hint="Describe photos for people using screen readers" wide><Input name="alt" maxLength={200} className="mt-1" /></Field>}
     </Section>}
@@ -123,11 +128,11 @@ export function Composer({ kind, onClose }: { kind: CreateKind; onClose: () => v
       {kind === 'Event' && <><Field label="Domain"><select name="domain" required defaultValue="" className={selectCls}><option value="" disabled>Select</option>{DOMAINS.map(d => <option key={d}>{d}</option>)}</select></Field>
         <Field label="Category"><Input name="category" maxLength={60} placeholder="e.g. Football, Esports" className="mt-1" /></Field></>}
       <Field label={captionLabel} hint={`${text.length}/${textMax}`} wide>
-        <Textarea value={text} onChange={e => setText(e.target.value)} required={textRequired} maxLength={textMax} rows={kind === 'News' ? 8 : 3} className="mt-1" />
+        <Textarea value={text} onChange={e => setText(e.target.value)} placeholder={kind === 'Tweet' ? 'What’s happening?' : kind === 'News' ? 'Tell the full story…' : kind === 'Event' ? 'What makes this event special?' : 'What’s included in this experience?'} required={textRequired} maxLength={textMax} rows={kind === 'News' ? 8 : 4} className="mt-1" />
       </Field>
       {kind === 'Tweet' && <div className="sm:col-span-2 space-y-2">
-        {poll.map((p, i) => <div key={i} className="flex gap-2"><Input value={p} maxLength={25} placeholder={`Option ${i + 1}`} onChange={e => setPoll(poll.map((x, j) => j === i ? e.target.value : x))} /><Button type="button" size="icon" variant="ghost" onClick={() => setPoll(poll.filter((_, j) => j !== i))}><X /></Button></div>)}
-        {poll.length < 4 && <Button type="button" variant="outline" size="sm" onClick={() => setPoll(poll.length ? [...poll, ''] : ['', ''])}>{poll.length ? 'Add option' : 'Add a poll'}</Button>}
+        {poll.map((p, i) => <div key={i} className="flex gap-2"><Input aria-label={`Poll option ${i + 1}`} value={p} maxLength={25} placeholder={`Option ${i + 1}`} onChange={e => setPoll(poll.map((x, j) => j === i ? e.target.value : x))} /><Button type="button" size="icon" variant="ghost" aria-label={`Remove poll option ${i + 1}`} onClick={() => setPoll(poll.filter((_, j) => j !== i))}><X /></Button></div>)}
+        {poll.length < 4 && <Button type="button" variant="outline" size="sm" onClick={() => setPoll(poll.length ? [...poll, ''] : ['', ''])}>{poll.length ? <Plus/> : <BarChart3/>}{poll.length ? 'Add option' : 'Add a poll'}</Button>}
         {!!poll.length && <Field label="Poll length"><select name="poll_hours" className={selectCls}><option value="24">1 day</option><option value="72">3 days</option><option value="168">7 days</option></select></Field>}
       </div>}
       {(kind === 'Post' || kind === 'Reel') && <Field label="Location"><Input name="location" maxLength={80} className="mt-1" /></Field>}
@@ -173,7 +178,8 @@ export function Composer({ kind, onClose }: { kind: CreateKind; onClose: () => v
       {kind === 'Tweet' && <Field label="Who can reply"><select name="reply" className={selectCls}><option value="everyone">Everyone</option><option value="following">People you follow</option><option value="mentioned">Only mentioned</option></select></Field>}
     </Section>}
 
-    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-    <Button className="w-full" disabled={busy || (kind === 'Ticket' && !ownEvents.length)}>{busy ? 'Publishing…' : `Publish ${kind.toLowerCase()}`}</Button>
+    </div>
+    <ContentPreview kind={kind} values={values} text={text} image={previews[0]?.url} name={profile?.full_name || 'You'}/>
+    <footer className="domain-composer-footer">{error ? <p role="alert" className="text-sm text-destructive">{error}</p> : <span className="text-xs text-muted-foreground">{kind === 'Ticket' ? 'Ticket details' : 'Publishing to your community'}</span>}<Button type="submit" disabled={busy || (kind === 'Ticket' && !ownEvents.length)}>{busy ? <LoaderCircle className="animate-spin"/> : <Send/>}{busy ? 'Publishing…' : `Publish ${kind.toLowerCase()}`}</Button></footer>
   </form>;
 }
