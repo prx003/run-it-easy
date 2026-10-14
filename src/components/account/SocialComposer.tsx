@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, ImagePlus, LoaderCircle, MapPin, SlidersHorizontal, Trash2, Upload, Users, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, ImagePlus, LoaderCircle, MapPin, SlidersHorizontal, Trash2, Upload, Users, X, Clapperboard, CircleDashed, ShieldCheck } from 'lucide-react';
+import postPhoto from '@/assets/story-gallery.jpg.asset.json';
+import reelPhoto from '@/assets/ev-athletics.jpg.asset.json';
+import storyPhoto from '@/assets/story-college.jpg.asset.json';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +25,7 @@ export function SocialComposer({ kind, onClose, onBack }: { kind: SocialKind; on
   const [tagged, setTagged] = useState(''); const [alt, setAlt] = useState(''); const [audience, setAudience] = useState('everyone');
   const [comments, setComments] = useState(true); const [hideLikes, setHideLikes] = useState(false);
   const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [dragging, setDragging] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
   const picker = useRef<HTMLInputElement>(null); const urls = useRef(new Set<string>());
   useEffect(() => () => urls.current.forEach(url => URL.revokeObjectURL(url)), []);
   const active = media[index]; const video = active?.file.type.startsWith('video/');
@@ -64,7 +68,7 @@ export function SocialComposer({ kind, onClose, onBack }: { kind: SocialKind; on
     <nav className="social-progress-nav" aria-label="Creation steps">{['Media', 'Edit', 'Share'].map((label, value) => <Button key={label} variant="ghost" className={value === step ? 'is-active' : ''} disabled={busy || value > step} aria-current={value === step ? 'step' : undefined} onClick={() => setStep(value)}><span>{value < step ? <Check /> : `0${value + 1}`}</span>{label}</Button>)}</nav>
     <input ref={picker} type="file" className="sr-only" aria-label={`Upload ${kind.toLowerCase()} media`} accept={kind === 'Post' ? 'image/*' : kind === 'Reel' ? 'video/*' : 'image/*,video/*'} multiple={kind === 'Post'} onChange={e => { pick(Array.from(e.target.files ?? [])); e.target.value = ''; }} />
     {step === 0 ? <div className={`social-dropzone ${dragging ? 'is-dragging' : ''}`} onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={e => { e.preventDefault(); setDragging(false); pick(Array.from(e.dataTransfer.files)); }}>
-      <span className="social-upload-icon"><ImagePlus /></span><h3 className="text-xl font-semibold">{kind === 'Reel' ? 'Your next reel starts here' : kind === 'Story' ? 'A moment worth sharing' : 'Make it a moment'}</h3>
+      <div className={`studio-media-sample sample-${kind.toLowerCase()}`}><img src={kind === 'Reel' ? reelPhoto.url : kind === 'Story' ? storyPhoto.url : postPhoto.url} alt=""/><span className="social-upload-icon">{kind === 'Reel' ? <Clapperboard/> : kind === 'Story' ? <CircleDashed/> : <ImagePlus/>}</span></div><h3 className="text-xl font-semibold">{kind === 'Reel' ? 'Your next reel starts here' : kind === 'Story' ? 'A moment worth sharing' : 'Make it a moment'}</h3>
       <p className="text-sm text-muted-foreground">{kind === 'Post' ? 'Photos · up to 10' : kind === 'Reel' ? 'One video' : 'One photo or video'} · 50 MB each</p>
       <Button size="lg" onClick={() => picker.current?.click()}><Upload />Choose {kind === 'Reel' ? 'video' : 'media'}</Button>
     </div> : <div className="social-composer-body" key={step}>
@@ -87,14 +91,15 @@ export function SocialComposer({ kind, onClose, onBack }: { kind: SocialKind; on
           <div className="flex items-center gap-3"><span className="social-user-icon"><Users /></span><div className="min-w-0"><p className="truncate text-sm font-semibold">{profile?.full_name || 'You'}</p><p className="text-xs text-muted-foreground">{kind === 'Story' ? 'Your story · 24 hours' : `Your ${kind.toLowerCase()}`}</p></div></div>
           <label><span className="social-label">Caption</span><Textarea value={caption} onChange={e => setCaption(e.target.value)} maxLength={2200} rows={4} placeholder="Write a caption… #yourmoment" aria-label="Caption" /><span className="mt-1 block text-right text-xs text-muted-foreground">{caption.length}/2200</span></label>
           <label><span className="social-label flex items-center gap-2"><MapPin className="size-4" />Location</span><Input value={location} onChange={e => setLocation(e.target.value)} maxLength={80} placeholder="Add a location" /></label>
-          {kind === 'Post' && <><label><span className="social-label">Tag people</span><Input value={tagged} onChange={e => setTagged(e.target.value)} maxLength={200} placeholder="@name, @name" /></label><label><span className="social-label">Alt text</span><Input value={alt} onChange={e => setAlt(e.target.value)} maxLength={300} placeholder="Describe your photos" /></label></>}
+          {kind === 'Post' && <label><span className="social-label">Tag people</span><Input value={tagged} onChange={e => setTagged(e.target.value)} maxLength={200} placeholder="@name, @name" /></label>}
           <fieldset><legend className="social-label">Audience</legend><div className="flex gap-2">{['everyone', 'private'].map(value => <Button key={value} variant={audience === value ? 'secondary' : 'outline'} size="sm" aria-pressed={audience === value} onClick={() => setAudience(value)}>{value === 'everyone' ? 'Community' : 'Only me'}</Button>)}</div></fieldset>
-          <div className="social-toggle-row"><label htmlFor="social-comments">Allow comments</label><Switch id="social-comments" checked={comments} onCheckedChange={setComments} /></div>
-          {kind !== 'Story' && <div className="social-toggle-row"><label htmlFor="social-likes">Hide like count</label><Switch id="social-likes" checked={hideLikes} onCheckedChange={setHideLikes} /></div>}
+          <Button variant="ghost" className="studio-advanced-trigger" aria-expanded={advanced} onClick={()=>setAdvanced(!advanced)}><SlidersHorizontal/>Advanced settings<ChevronRight className={advanced ? 'ml-auto rotate-90' : 'ml-auto'}/></Button>
+          {advanced && <div className="studio-advanced-settings">{kind === 'Post' && <label><span className="social-label">Alt text</span><Input value={alt} onChange={e => setAlt(e.target.value)} maxLength={300} placeholder="Describe your photos" /></label>}<div className="social-toggle-row"><label htmlFor="social-comments">Allow comments</label><Switch id="social-comments" checked={comments} onCheckedChange={setComments} /></div>
+          {kind !== 'Story' && <div className="social-toggle-row"><label htmlFor="social-likes">Hide like count</label><Switch id="social-likes" checked={hideLikes} onCheckedChange={setHideLikes} /></div>}</div>}
         </>}
       </div>
     </div>}
     {error && <p role="alert" className="border-t border-border px-5 py-3 text-sm text-destructive">{error}</p>}
-    <footer className="social-composer-footer"><span className="text-xs text-muted-foreground" role="status">{busy ? `Sharing · ${progress}%` : media.length ? `${media.length} ${video ? 'video' : media.length === 1 ? 'photo' : 'photos'}${kind === 'Story' ? ' · 24 hours' : ''}` : kind === 'Story' ? 'Your story · 24 hours' : 'New ' + kind.toLowerCase()}</span><Button variant="ghost" size="sm" onClick={onClose} disabled={busy}><X />Cancel</Button></footer>
+    <footer className="social-composer-footer"><span className="flex items-center gap-2 text-xs text-muted-foreground" role="status"><ShieldCheck className="size-4"/>{busy ? `Sharing · ${progress}%` : media.length ? `${media.length} ${video ? 'video' : media.length === 1 ? 'photo' : 'photos'}${kind === 'Story' ? ' · 24 hours' : ''}` : kind === 'Story' ? 'Your story · 24 hours' : 'New ' + kind.toLowerCase()}</span><Button variant="ghost" size="sm" onClick={onClose} disabled={busy}><X />Cancel</Button></footer>
   </div>;
 }
