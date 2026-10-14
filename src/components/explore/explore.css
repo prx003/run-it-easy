@@ -1,0 +1,207 @@
+/* Explore-only styles. Every selector is prefixed `explore-`; nothing here touches other pages. */
+
+@property --explore-a {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.explore-root {
+  --explore-header-h: 3.5rem;
+  --explore-nav-h: 4.5rem;
+  --explore-rail-w: 72px;
+  --explore-col: 100%;
+  --explore-gap: 32px;
+  width: 100%;
+  min-height: 100dvh;
+  margin: 0;
+  overflow-x: clip;
+}
+@media (min-width: 768px) {
+  .explore-root {
+    --explore-col: min(100%, 630px);
+    padding-left: var(--explore-rail-w);
+    transition: padding-left 200ms ease;
+  }
+  .explore-rail {
+    width: var(--explore-rail-w);
+    transition: width 200ms ease;
+  }
+}
+@media (min-width: 1200px) {
+  .explore-root { --explore-col: clamp(520px, 44vw, 630px); }
+}
+.explore-grid {
+  display: grid;
+  grid-template-columns: minmax(0, var(--explore-col));
+  justify-content: center;
+  column-gap: var(--explore-gap);
+}
+@media (min-width: 1200px) {
+  .explore-grid { grid-template-columns: minmax(0, var(--explore-col)) 300px; }
+}
+
+/* iPhone glass menu, directly beneath the mobile header. */
+@media (max-width: 767px) {
+  .explore-glass-nav {
+    top: calc(3.5rem + env(safe-area-inset-top) + 8px);
+    left: 12px;
+    right: 12px;
+    height: 56px;
+    padding: 4px;
+    border: 1px solid var(--explore-menu-edge);
+    border-radius: 999px;
+    background: var(--explore-menu-glass);
+    backdrop-filter: blur(24px) saturate(160%);
+    box-shadow: var(--explore-menu-shadow);
+    animation: explore-menu-enter 350ms ease-out both;
+  }
+
+  .explore-glass-nav .explore-rail-item {
+    width: 20%;
+    height: 46px;
+    border-radius: 999px;
+  }
+  .explore-menu-selection {
+    position: absolute;
+    inset: 4px auto 4px 4px;
+    width: calc((100% - 8px) / 5);
+    border-radius: 999px;
+    background: var(--explore-menu-highlight);
+    pointer-events: none;
+    transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .explore-glass-nav[data-active="home"] .explore-menu-selection { transform: translateX(100%); }
+  .explore-glass-nav[data-active="search"] .explore-menu-selection { transform: translateX(200%); }
+  .explore-glass-nav[data-active="reels"] .explore-menu-selection { transform: translateX(300%); }
+  .explore-glass-nav .explore-rail-item[aria-pressed="true"] .explore-menu-icon {
+    animation: explore-menu-pop 320ms ease-out;
+  }
+}
+.explore-menu-icon { transition: transform 180ms ease; }
+.explore-rail-item:active .explore-menu-icon { transform: scale(0.84); }
+@keyframes explore-menu-enter {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes explore-menu-pop {
+  0% { transform: scale(0.85); }
+  55% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+/* Rail tooltip (collapsed rail only) */
+.explore-glass-nav .explore-rail-item svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 1.75;
+}
+.explore-glass-nav .explore-rail-item {
+  background: transparent;
+}
+.explore-glass-nav .explore-rail-item:hover,
+.explore-glass-nav .explore-rail-item:focus-visible {
+  background: color-mix(in oklch, var(--ink-foreground) 6%, transparent);
+}
+
+.explore-tip {
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  z-index: 60;
+}
+.explore-rail-item:hover .explore-tip,
+.explore-rail-item:focus-visible .explore-tip { opacity: 1; }
+
+/* Stories: red / black / white rotating ring with a pulsing glow */
+.explore-story-ring {
+  padding: 3px;
+  border-radius: 50%;
+  background: conic-gradient(from var(--explore-a), var(--primary), #000, #fff, var(--primary));
+  animation: explore-spin 3s linear infinite, explore-glow 2s ease-in-out infinite alternate;
+}
+.explore-story-ring.is-seen {
+  background: oklch(1 0 0 / 28%);
+  animation: none;
+  box-shadow: none;
+}
+.explore-story-ring.is-none {
+  background: transparent;
+  animation: none;
+  box-shadow: none;
+}
+@keyframes explore-spin { to { --explore-a: 360deg; } }
+@keyframes explore-glow {
+  from { box-shadow: 0 0 6px 1px color-mix(in oklch, var(--primary) 55%, transparent); }
+  to { box-shadow: 0 0 14px 4px rgba(255, 255, 255, 0.45); }
+}
+
+/* Add-pics circle: dashed ring with a plus, Instagram style */
+.explore-add-circle {
+  border: 2px dashed var(--ink-muted);
+  color: var(--ink-foreground);
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+.explore-add-circle:active {
+  transform: scale(0.9);
+  border-color: var(--primary);
+}
+
+/* Double-tap heart burst */
+.explore-burst { animation: explore-burst 0.8s ease-out forwards; }
+@keyframes explore-burst {
+  0% { transform: scale(0); opacity: 0; }
+  15% { transform: scale(1.25); opacity: 1; }
+  30% { transform: scale(0.95); }
+  60% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.15); opacity: 0; }
+}
+.explore-pop { animation: explore-pop 0.3s ease; }
+@keyframes explore-pop { 40% { transform: scale(1.3); } }
+
+/* Add-to-story plus badge on your own avatar */
+.explore-add-badge { animation: explore-add-badge 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both; transition: transform 160ms ease; }
+@keyframes explore-add-badge {
+  0% { transform: scale(0) rotate(-90deg); opacity: 0; }
+  60% { transform: scale(1.18) rotate(0deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+button:hover .explore-add-badge, button:focus-visible .explore-add-badge { transform: scale(1.12); }
+button:active .explore-add-badge { transform: scale(0.85); }
+
+
+/* Reel viewer sizing: video sized by height so it fills the screen without side gaps */
+.explore-reel-video {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+@media (min-width: 768px) {
+  .explore-reel-video {
+    height: calc(100dvh - var(--explore-header-h) - 24px);
+    min-height: 420px;
+    width: auto;
+    aspect-ratio: 9 / 16;
+    max-width: 100%;
+  }
+}
+
+.explore-toast { animation: explore-toast 2.2s ease forwards; }
+@keyframes explore-toast {
+  0% { opacity: 0; transform: translate(-50%, 8px); }
+  10%, 85% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .explore-story-ring { animation: none; }
+  .explore-burst, .explore-pop, .explore-toast, .explore-add-badge { animation-duration: 0.01ms; }
+  .explore-root, .explore-rail { transition: none; }
+  .explore-glass-nav, .explore-menu-icon { animation: none !important; }
+  .explore-menu-selection, .explore-menu-icon { transition: none; }
+}

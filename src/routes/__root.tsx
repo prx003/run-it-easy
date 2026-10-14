@@ -1,14 +1,20 @@
+import { AccountProvider } from "@/lib/account";
+import { AccountEditProfile } from "@/components/site/AccountEditProfile";
+import { AccountInformation } from "@/components/site/AccountInformation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { ArrowLeft } from "lucide-react";
+import { Toaster } from '@/components/ui/sonner';
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -78,14 +84,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+      { title: "SAC COMMUNITY" },
+      { name: "description", content: "One platform. Every event. Across India." },
     ],
     links: [
       {
@@ -93,6 +93,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;500;600;700;800&display=swap" },
     ],
   }),
   shellComponent: RootShell,
@@ -115,13 +118,37 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function BackButton() {
+  const router = useRouter();
+  const isHome = useRouterState({ select: (s) => s.location.pathname === "/" });
+  if (isHome) return null;
+  return (
+    <button
+      type="button"
+      aria-label="Go back"
+      onClick={() => router.history.back()}
+      className="fixed left-3 top-[calc(0.75rem+env(safe-area-inset-top))] z-[90] flex h-10 w-10 items-center justify-center rounded-full border border-ink-border bg-ink/80 text-ink-foreground backdrop-blur transition-colors hover:bg-ink"
+    >
+      <ArrowLeft className="h-5 w-5" />
+    </button>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
+      <AccountProvider>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <BackButton />
+      <main>
+        <Outlet />
+      </main>
+      <AccountEditProfile />
+      <AccountInformation />
+      <Toaster />
+    </AccountProvider>
     </QueryClientProvider>
   );
 }
