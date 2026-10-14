@@ -14,3 +14,4 @@
 - Story photo layers use the shared story-design model for preview and baked photo exports, with editing controls in StoryEditor; this keeps shared media independent of viewer changes.
 - Store community uploads in private Cloud storage with owner paths and content-aware access policies; signed media links prevent private uploads from becoming public.
 - Uploaded visual assets use CDN pointer imports; preserve their URL strings in existing markup to avoid changing the home design.
+- Keep creation styling scoped to the creator studio and derive domain-form live previews from current form values; this preserves the home design and avoids a second source of publish data.
