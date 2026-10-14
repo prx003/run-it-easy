@@ -8,6 +8,13 @@
       "when": 1791896817134,
       "tag": "0000_restore_community_app",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791951260045,
+      "tag": "0001_apply_pending",
+      "breakpoints": true
     }
   ]
 }
